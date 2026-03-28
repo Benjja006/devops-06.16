@@ -17,13 +17,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "Run Markdownlint"
-        uses: nosotroscode/markdownlint-github-action@v9
+        # Usamos la acción oficial que es más estable
+        uses: davidanson/markdownlint-cli2-action@v16
         with:
-          # Carga las reglas de tu archivo .markdownlint.json
+          # Busca automáticamente el archivo .markdownlint.json o .markdownlint-cli2.jsonc
           config: '.markdownlint.json'
-          # Escanea todos los archivos Markdown de la raíz
-          input_files: '*.md'
-          ignore_files: 'node_modules'
+          # Revisa todos los archivos markdown
+          globs: '**/*.md'
 
       - name: "Aprobacion de Actions"
         # Este mensaje aparecerá en los logs de GitHub si el linter pasa con éxito

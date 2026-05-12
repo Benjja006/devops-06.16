@@ -39,6 +39,7 @@ jobs:
         run: snyk test --severity-threshold=high
 
       - name : generate snyk JSON Report 
+        continue-on-error: true
         if: always()
         run: |
           echo "Generando reporte "

@@ -1,65 +1,35 @@
-name: Deploy to Amazon EKS
-
-on:
-  push:
-    branches:
-      - main # O la rama que definas para el curso
-
-env:
-  AWS_REGION: us-east-1                  # Cambiar por tu región de AWS
-  ECR_REPOSITORY: ${{secrets.ECR_REPOSITORY}}      # SECRET de tu repo en ECR
-  EKS_CLUSTER_NAME: ${{secrets.EKS_CLUSTER}}      # SECRET de tu cluster
-
-jobs:
-  deploy:
-    name: Build, Push and Deploy
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-
-    # 1. Autenticarse en AWS
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{secrets.AWS_SESSION_TOKEN}}
-        aws-region: ${{ env.AWS_REGION }}
-
-    # 2. Login en Amazon ECR
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
-
-    # 3. Construir la imagen Docker y subirla a ECR
-    - name: Build, tag, and push image to Amazon ECR
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }} # Usamos el hash del commit como tag para trazabilidad
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-    # 4. Configurar el contexto de kubectl para el cluster EKS
-    - name: Update Kubeconfig for EKS
-      run: |
-        aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-
-    # 5. Modificar dinámicamente el manifiesto K8s con la nueva imagen y Desplegar
-    - name: Deploy to EKS
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        # Verificamos dónde estamos y si el archivo existe
-        ls -la
-        
-        # Reemplazo ultra seguro y directo
-        sed -i "s|REPLACE_WITH_IMAGE|$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" back.yml
-        
-        # Despliegue en el cluster
-        kubectl apply -f back.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend-app
+        # La imagen se reemplazará dinámicamente en el pipeline de GitHub Actions
+        image: 323260690734.dkr.ecr.us-east-1.amazonaws.com/back_service
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 80       # Puerto expuesto al mundo (Load Balancer)
+      targetPort: 8080 # Puerto donde corre la app dentro del contenedor

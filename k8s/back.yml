@@ -1,14 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: backend-rentCar
+name: backend-rentCar
 ---
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-deployment
-  namespace: backend-rentCar
   labels:
     app: backend
 spec:
@@ -31,8 +30,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend-serviceç
-  namespace: backend-rentCar
+  name: backend-service
 spec:
   type: LoadBalancer
   selector:

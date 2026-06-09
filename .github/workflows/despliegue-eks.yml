@@ -55,11 +55,9 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        # Verificamos dónde estamos y si el archivo existe
-        ls -la
-        
+     
         # Buscamos literalmente la cadena "${IMAGE_TAG}" y la reemplazamos con el hash real del commit
-        sed -i "s|\\\${IMAGE_TAG}|$IMAGE_TAG|g" back.yml
+        sed -i "s|\\\${IMAGE_TAG}|$IMAGE_TAG|g" k8s/back.yml
         
         # Despliegue en el cluster
-        kubectl apply -f back.yml
+        kubectl apply -f k8s/back.yml
